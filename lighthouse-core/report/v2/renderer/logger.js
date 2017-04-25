@@ -27,6 +27,8 @@ class Logger {
    */
   constructor(element) {
     this.el = element;
+    /** @private {?number} */
+    this._id = null;
   }
 
   /**

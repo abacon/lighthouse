@@ -28,7 +28,7 @@ class ReportRenderer {
   /**
    * @param {!DOM} dom
    * @param {!CategoryRenderer} categoryRenderer
-   * @param {!ReportUIFeatures=} uiFeatures
+   * @param {ReportUIFeatures=} uiFeatures
    */
   constructor(dom, categoryRenderer, uiFeatures = null) {
     /** @private {!DOM} */
@@ -58,11 +58,11 @@ class ReportRenderer {
       if (this._uiFeatures) {
         this._uiFeatures.addUIFeatures(report);
       }
-    } catch (e) {
+    } catch (/** @type {!Error} */ e) {
       element = container.appendChild(this._renderException(e));
     }
 
-    return element;
+    return /** @type {!Element} **/ (element);
   }
 
   /**
@@ -149,7 +149,7 @@ class ReportRenderer {
   }
 
   /**
-   * @param {!ReportJSON} report
+   * @param {!ReportRenderer.ReportJSON} report
    * @return {!Element}
    */
   _renderReport(report) {
@@ -218,7 +218,11 @@ ReportRenderer.CategoryJSON; // eslint-disable-line no-unused-expressions
  *     generatedTime: string,
  *     initialUrl: string,
  *     url: string,
- *     reportCategories: !Array<!ReportRenderer.CategoryJSON>
+ *     reportCategories: !Array<!ReportRenderer.CategoryJSON>,
+ *     runtimeConfig: {
+ *       blockedUrlPatterns: !Array<string>,
+ *       environment: !Array<{description: string, enabled: boolean, name: string}>
+ *     }
  * }}
  */
 ReportRenderer.ReportJSON; // eslint-disable-line no-unused-expressions

@@ -20,12 +20,18 @@
 class ReportUIFeatures {
 
   /**
-   * @param {!Document} document
+   * @param {!DOM} dom
    */
-  constructor(document) {
+  constructor(dom) {
     this.json = null;
-    this._document = document;
+    /** @private {!DOM} */
+    this._dom = dom;
+    /** @private {!Document} */
+    this._document = this._dom.document();
+    /** @private {boolean} */
     this._copyAttempt = false;
+    /** @type {Element} **/
+    this.exportButton = null;
 
     this.onCopy = this.onCopy.bind(this);
     this.onExportButtonClick = this.onExportButtonClick.bind(this);
@@ -36,7 +42,7 @@ class ReportUIFeatures {
     // Add logger to page.
     let loggerEl = this._document.querySelector('#lh-log');
     if (!loggerEl) {
-      loggerEl = this._document.createElement('div');
+      loggerEl = this._dom.createElement('div');
       loggerEl.id = 'lh-log';
       this._document.body.appendChild(loggerEl);
     }
@@ -46,10 +52,10 @@ class ReportUIFeatures {
   _addEventListeners() {
     this._setUpCollapseDetailsAfterPrinting();
 
-    this.exportButton = this._document.querySelector('.lh-export__button');
+    this.exportButton = this._dom.find('.lh-export__button', this._document);
     if (this.exportButton) {
       this.exportButton.addEventListener('click', this.onExportButtonClick);
-      const dropdown = this._document.querySelector('.lh-export__dropdown');
+      const dropdown = this._dom.find('.lh-export__dropdown', this._document);
       dropdown.addEventListener('click', this.onExport);
 
       this._document.addEventListener('copy', this.onCopy);
@@ -96,15 +102,14 @@ class ReportUIFeatures {
 
         // Note: In Safari 10.0.1, execCommand('copy') returns true if there's
         // a valid text selection on the page. See http://caniuse.com/#feat=clipboard.
-        const successful = this._document.execCommand('copy');
-        if (!successful) {
+        if (!this._document.execCommand('copy')) {
           this._copyAttempt = false; // Prevent event handler from seeing this as a copy attempt.
           this.logger.warn('Your browser does not support copy to clipboard.');
         }
       }
-    } catch (err) {
+    } catch (/** @type {!Error} */ e) {
       this._copyAttempt = false;
-      this.logger.log(err.message);
+      this.logger.log(e.message);
     }
   }
 
@@ -118,7 +123,8 @@ class ReportUIFeatures {
    */
   onExportButtonClick(e) {
     e.preventDefault();
-    e.target.classList.toggle('active');
+    const el = /** @type {!Element} */ (e.target);
+    el.classList.toggle('active');
     this._document.addEventListener('keydown', this.onKeyDown);
   }
 
@@ -130,7 +136,7 @@ class ReportUIFeatures {
   _resetUIForExport() {
     this.logger.hide();
     this.closeExportDropdown();
-    this._document.querySelectorAll('template[data-stamped]').forEach(t => {
+    this._dom.findAll('template[data-stamped]', this._document).forEach(t => {
       t.removeAttribute('data-stamped');
     });
   }
@@ -142,11 +148,13 @@ class ReportUIFeatures {
   onExport(e) {
     e.preventDefault();
 
-    if (!e.target.dataset.action) {
+    const el = /** @type {!Element} */ (e.target);
+
+    if (!el.hasAttribute('data-action')) {
       return;
     }
 
-    switch (e.target.dataset.action) {
+    switch (el.getAttribute('data-action')) {
       case 'copy':
         this.onCopyButtonClick();
         break;
@@ -168,8 +176,8 @@ class ReportUIFeatures {
         const htmlStr = this._document.documentElement.outerHTML;
         try {
           this._saveFile(new Blob([htmlStr], {type: 'text/html'}));
-        } catch (err) {
-          this.logger.error('Could not export as HTML. ' + err.message);
+        } catch (/** @type {!Error} */ e) {
+          this.logger.error('Could not export as HTML. ' + e.message);
         }
         break;
       }
@@ -201,12 +209,14 @@ class ReportUIFeatures {
     // after it's created. Normally, we could also listen for the popup window's
     // load event, however it is cross-domain and won't fire. Instead, listen
     // for a message from the target app saying "I'm open".
-    self.addEventListener('message', function msgHandler(e) {
+    self.addEventListener('message', function msgHandler(/** @type {!Event} */ evt) {
+      const e = /** @type {!MessageEvent} */ (evt);
+
       if (e.origin !== VIEWER_ORIGIN) {
         return;
       }
 
-      if (e.data.opened) {
+      if (e.data['opened']) {
         popup.postMessage({lhresults: this.json}, VIEWER_ORIGIN);
         self.removeEventListener('message', msgHandler);
       }
@@ -231,7 +241,7 @@ class ReportUIFeatures {
    * open a `<details>` element.
    */
   expandAllDetails() {
-    const details = Array.from(this._document.querySelectorAll('.lh-categories details'));
+    const details = this._dom.findAll('.lh-categories details', this._document);
     details.map(detail => detail.open = true);
   }
 
@@ -240,7 +250,7 @@ class ReportUIFeatures {
    * open a `<details>` element.
    */
   collapseAllDetails() {
-    const details = Array.from(this._document.querySelectorAll('.lh-categories details'));
+    const details = this._dom.findAll('.lh-categories details', this._document);
     details.map(detail => detail.open = false);
   }
 
@@ -275,16 +285,17 @@ class ReportUIFeatures {
     });
 
     const ext = blob.type.match('json') ? '.json' : '.html';
+    const href = URL.createObjectURL(blob);
 
-    const a = this._document.createElement('a');
+    const a = this._dom.createElement('a');
     a.download = `${filename}${ext}`;
-    a.href = URL.createObjectURL(blob);
+    a.href = href;
     this._document.body.appendChild(a); // Firefox requires anchor to be in the DOM.
     a.click();
 
     // cleanup.
     this._document.body.removeChild(a);
-    setTimeout(_ => URL.revokeObjectURL(a.href), 500);
+    setTimeout(_ => URL.revokeObjectURL(href), 500);
   }
 }
 
@@ -293,3 +304,6 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
   self.ReportUIFeatures = ReportUIFeatures;
 }
+
+/** @type {function({url: string, generatedTime: string}): string} */
+self.getFilenamePrefix; // eslint-disable-line no-unused-expressions
