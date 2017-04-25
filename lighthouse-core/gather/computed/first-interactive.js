@@ -40,19 +40,19 @@ const TRACE_BUSY_MSG = 'trace was busy the entire time';
  *    > The page responds to user input in a reasonable time on average, but it’s ok if this
  *      response is not always immediate.
  *
- * First Interactive is defined as the first period after FMP of N-seconds where there are no long
- * tasks who are not members of an "insignificant task group".
+ * First Interactive is defined as the first period after FMP of N-seconds that has no bad task
+ * groups.
  *
  *    > t = time in seconds since FMP
  *    > N = f(t) = 4 * e^(-0.045 * t) + 1
  *      5 = f(0) = 4 + 1
  *      3 ~= f(15) ~= 2 + 1
  *      1 ~= f(∞) ~= 0 + 1
- *    > an "insignificant task group" is a cluster of 1 or more tasks that
- *        > Does not start within the first 5s after FMP.
- *        > Does not span more than 250ms from the start of the earliest task to the end of the
- *          latest task.
- *        > Has at least 1 second of padding before and after from all other long tasks.
+ *    > a "bad task group" is a cluster of 1 or more long tasks with no more than 1s of idle time
+ *      between each task that does one of the following
+ *        > Starts within the first 5s after FMP.
+ *        > Spans more than 250ms from the start of the earliest task in the group to the end of the
+ *          latest task in the group.
  *
  * If this timestamp is earlier than DOMContentLoaded, use DOMContentLoaded as firstInteractive.
  */
