@@ -318,14 +318,11 @@ summary {
   font-size: large;
 }
 
-.lh-categories {
-  padding: calc(var(--default-padding) * 2) 0;
-  margin-top: var(--report-header-height);
-}
-
 .lh-scores-header {
   display: flex;
-  margin: var(--default-padding) 0 calc(var(--default-padding) * 2) 0;
+  margin: var(--report-header-height) 0 0 0;
+  padding: calc(var(--default-padding) * 2) var(--default-padding);
+  border-bottom: 1px solid var(--report-border-color);
 }
 
 .lh-category {
@@ -335,7 +332,6 @@ summary {
 
 .lh-category:first-of-type {
   border: none;
-  padding-top: 0;
 }
 
 .lh-category > .lh-audit,
