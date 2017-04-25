@@ -20,9 +20,10 @@ const ComputedArtifact = require('./computed-artifact');
 const TracingProcessor = require('../../lib/traces/tracing-processor');
 
 const LONG_TASK_THRESHOLD = 50;
-const LONELY_TASK_FMP_DISTANCE = 5000;
-const LONELY_TASK_ENVELOPE_SIZE = 250;
-const LONELY_TASK_NEIGHBOR_DISTANCE = 1000;
+
+const MAX_TASK_GROUP_DURATION = 250;
+const MIN_TASK_GROUP_PADDING = 1000;
+const MIN_TASK_GROUP_FMP_DISTANCE = 5000;
 
 const MAX_QUIET_WINDOW_SIZE = 5000;
 const TRACE_BUSY_MSG = 'trace was busy the entire time';
@@ -39,17 +40,19 @@ const TRACE_BUSY_MSG = 'trace was busy the entire time';
  *    > The page responds to user input in a reasonable time on average, but it’s ok if this
  *      response is not always immediate.
  *
- * First Interactive is defined as the first period after FMP of N-seconds where there are no
- * long tasks that are not "lonely".
+ * First Interactive is defined as the first period after FMP of N-seconds where there are no long
+ * tasks who are not members of an "insignificant task group".
  *
  *    > t = time in seconds since FMP
  *    > N = f(t) = 4 * e^(-0.045 * t) + 1
  *      5 = f(0) = 4 + 1
  *      3 ~= f(15) ~= 2 + 1
  *      1 ~= f(∞) ~= 0 + 1
- *    > a "lonely" task is an envelope of 250ms at least 5s after FMP that contains a set of long
- *      tasks that have at least 1 second of padding before and after the envelope that contain no
- *      long tasks.
+ *    > an "insignificant task group" is a cluster of 1 or more tasks that
+ *        > Does not start within the first 5s after FMP.
+ *        > Does not span more than 250ms from the start of the earliest task to the end of the
+ *          latest task.
+ *        > Has at least 1 second of padding before and after from all other long tasks.
  *
  * If this timestamp is earlier than DOMContentLoaded, use DOMContentLoaded as firstInteractive.
  */
@@ -69,35 +72,50 @@ class FirstInteractive extends ComputedArtifact {
   }
 
   /**
-   * @param {!Array<{start: number, end: number>}} longTasks
-   * @param {number} i
-   * @param {number} FMP
-   * @param {number} traceEnd
-   * @return {number} The last index of the lonely task envelope,
-   *    -1 if not a lonely task
+   * @param {!Array<{start: number, end: number}>} tasks
+   * @param {number} startIndex
+   * @param {number} windowEnd
+   * @return {!Array<{start: number, end: number, duration: number}>}
    */
-  static getLastLonelyTaskIndex(longTasks, i, FMP, traceEnd) {
-    const longTask = longTasks[i];
-    const previousTask = longTasks[i - 1];
-    if (longTask.start < FMP + LONELY_TASK_FMP_DISTANCE ||
-        traceEnd - longTask.end < LONELY_TASK_NEIGHBOR_DISTANCE ||
-        longTask.start - previousTask.end < LONELY_TASK_NEIGHBOR_DISTANCE ||
-        longTask.end - longTask.start > LONELY_TASK_ENVELOPE_SIZE) {
-      return -1;
-    }
+  static getTaskGroupsInWindow(tasks, startIndex, windowEnd) {
+    const groups = [];
 
-    let lonelyTaskIndex = i;
-    const envelopeEnd = longTask.start + LONELY_TASK_ENVELOPE_SIZE;
-    const windowEnd = envelopeEnd + LONELY_TASK_NEIGHBOR_DISTANCE;
-    for (let j = i + 1; longTasks[j] && longTasks[j].start < windowEnd; j++) {
-      if (longTasks[j].end > envelopeEnd) {
-        lonelyTaskIndex = -1;
-      } else {
-        lonelyTaskIndex = j;
+    let lastEndTime = -Infinity;
+    let currentGroup = null;
+
+    // consider all tasks that could possibly be part of a group starting before windowEnd
+    const considerationWindowEnd = windowEnd + MIN_TASK_GROUP_PADDING;
+    const couldTaskBeInGroup = task => task && task.start < considerationWindowEnd;
+    for (let i = startIndex; couldTaskBeInGroup(tasks[i]); i++) {
+      const task = tasks[i];
+
+      // check if enough time has passed to start a new group
+      if (task.start - lastEndTime > MIN_TASK_GROUP_PADDING) {
+        if (currentGroup) {
+          groups.push(currentGroup);
+        }
+
+        currentGroup = [];
       }
+
+      currentGroup.push(task);
+      lastEndTime = task.end;
     }
 
-    return lonelyTaskIndex;
+    if (currentGroup) {
+      groups.push(currentGroup);
+    }
+
+    return groups
+      // add some useful information about the group
+      .map(tasks => {
+        const start = tasks[0].start;
+        const end = tasks[tasks.length - 1].end;
+        const duration = end - start;
+        return {start, end, duration, tasks};
+      })
+      // filter out groups that started after the window
+      .filter(group => group.start < windowEnd);
   }
 
   /**
@@ -125,23 +143,14 @@ class FirstInteractive extends ComputedArtifact {
         throw new Error(TRACE_BUSY_MSG);
       }
 
-      let isQuiet = true;
-      // Loop over all the long tasks within the window
-      // All tasks that we find in the window must be lonely or the window isn't quiet.
-      for (let j = i + 1; j < longTasks.length && longTasks[j].start < windowEnd; j++) {
-        const lastLonelyTaskIndex = FirstInteractive.getLastLonelyTaskIndex(longTasks, j, FMP,
-            traceEnd);
-        if (lastLonelyTaskIndex === -1) {
-          // We found a task that isn't lonely, this window isn't quiet
-          isQuiet = false;
-          break;
-        } else {
-          // Skip over the rest of the lonely task envelope
-          j = lastLonelyTaskIndex;
-        }
-      }
+      const isTooCloseToFMP = group => group.start < FMP + MIN_TASK_GROUP_FMP_DISTANCE;
+      const isTooLong = group => group.duration > MAX_TASK_GROUP_DURATION;
+      const isBadTaskGroup = group => isTooCloseToFMP(group) || isTooLong(group);
 
-      if (isQuiet) {
+      const taskGroups = FirstInteractive.getTaskGroupsInWindow(longTasks, i + 1, windowEnd);
+      const hasBadTaskGroups = taskGroups.find(isBadTaskGroup);
+
+      if (!hasBadTaskGroups) {
         return windowStart;
       }
     }
