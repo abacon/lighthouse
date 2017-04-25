@@ -91,18 +91,18 @@ class ReportRenderer {
    */
   _renderReportHeader(report) {
     const header = this._dom.cloneTemplate('#tmpl-lh-heading', this._templateContext);
-    header.querySelector('.lh-config__timestamp').textContent =
+    this._dom.find('.lh-config__timestamp', header).textContent =
         formatDateTime(report.generatedTime);
-    const url = header.querySelector('.lh-metadata__url');
+    const url = this._dom.find('.lh-metadata__url', header);
     url.href = report.url;
     url.textContent = report.url;
 
-    const env = header.querySelector('.lh-env__items');
+    const env = this._dom.find('.lh-env__items', header);
     report.runtimeConfig.environment.forEach(runtime => {
       const item = this._dom.cloneTemplate('#tmpl-lh-env__items', env);
-      item.querySelector('.lh-env__name').textContent = runtime.name;
-      item.querySelector('.lh-env__description').textContent = runtime.description;
-      item.querySelector('.lh-env__enabled').textContent =
+      this._dom.find('.lh-env__name', item).textContent = runtime.name;
+      this._dom.find('.lh-env__description', item).textContent = runtime.description;
+      this._dom.find('.lh-env__enabled', item).textContent =
           runtime.enabled ? 'Enabled' : 'Disabled';
       env.appendChild(item);
     });
@@ -116,8 +116,8 @@ class ReportRenderer {
    */
   _renderReportFooter(report) {
     const footer = this._dom.cloneTemplate('#tmpl-lh-footer', this._templateContext);
-    footer.querySelector('.lh-footer__version').textContent = report.lighthouseVersion;
-    footer.querySelector('.lh-footer__timestamp').textContent =
+    this._dom.find('.lh-footer__version', footer).textContent = report.lighthouseVersion;
+    this._dom.find('.lh-footer__timestamp', footer).textContent =
         formatDateTime(report.generatedTime);
     return footer;
   }
@@ -129,17 +129,21 @@ class ReportRenderer {
   _renderReportNav(report) {
     const leftNav = this._dom.cloneTemplate('#tmpl-lh-leftnav', this._templateContext);
 
-    leftNav.querySelector('.leftnav__header__version').textContent =
+    this._dom.find('.leftnav__header__version', leftNav).textContent =
         `Version: ${report.lighthouseVersion}`;
 
-    const nav = leftNav.querySelector('.lh-leftnav');
+    const nav = this._dom.find('.lh-leftnav', leftNav);
     for (const category of report.reportCategories) {
-      const item = this._dom.cloneTemplate('#tmpl-lh-leftnav__items', leftNav);
-      item.querySelector('.leftnav-item__category').textContent = category.name;
-      const score = item.querySelector('.leftnav-item__score');
+      const itemsTmpl = this._dom.cloneTemplate('#tmpl-lh-leftnav__items', leftNav);
+
+      const navItem = this._dom.find('.lh-leftnav__item', itemsTmpl);
+      navItem.href = `#${category.id}`;
+
+      this._dom.find('.leftnav-item__category', navItem).textContent = category.name;
+      const score = this._dom.find('.leftnav-item__score', navItem);
       score.classList.add(`lh-score__value--${calculateRating(category.score)}`);
       score.textContent = Math.round(formatNumber(category.score));
-      nav.appendChild(item);
+      nav.appendChild(navItem);
     }
     return leftNav;
   }

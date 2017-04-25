@@ -123,6 +123,19 @@ class ReportUIFeatures {
   }
 
   /**
+   * Resets the state of page before capturing the page for export.
+   * When the user opens the exported HTML page, certain UI elements should
+   * be in their open state (not opened) and the templates should be refreshly stamped.
+   */
+  _resetUIForExport() {
+    this.logger.hide();
+    this.closeExportDropdown();
+    this._document.querySelectorAll('template[data-stamped]').forEach(t => {
+      t.removeAttribute('data-stamped');
+    });
+  }
+
+  /**
    * Handler for "export as" button.
    * @param {!Event} e
    */
@@ -150,9 +163,7 @@ class ReportUIFeatures {
         break;
       }
       case 'save-html': {
-        // Hide opened UI elements before capturing the page.
-        this.logger.hide();
-        this.closeExportDropdown();
+        this._resetUIForExport();
 
         const htmlStr = this._document.documentElement.outerHTML;
         try {
