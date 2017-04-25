@@ -151,12 +151,17 @@ class ReportRenderer {
   _renderReport(report) {
     const container = this._dom.createElement('div', 'lh-container');
 
-    container.appendChild(this._renderReportHeader(report)); // sticker header goes at the top.
+    container.appendChild(this._renderReportHeader(report)); // sticky header goes at the top.
     container.appendChild(this._renderReportNav(report));
 
     const reportSection = container.appendChild(this._dom.createElement('div', 'lh-report'));
+
+    const scoreHeader = reportSection.appendChild(
+        this._dom.createElement('div', 'lh-scores-header'));
+
     const categories = reportSection.appendChild(this._dom.createElement('div', 'lh-categories'));
     for (const category of report.reportCategories) {
+      scoreHeader.appendChild(this._categoryRenderer.renderScoreGauge(category));
       categories.appendChild(this._categoryRenderer.render(category));
     }
 
@@ -179,6 +184,7 @@ if (typeof module !== 'undefined' && module.exports) {
  *     score: number,
  *     result: {
  *       description: string,
+ *       debugString: string,
  *       displayValue: string,
  *       helpText: string,
  *       score: (number|boolean),
@@ -193,6 +199,7 @@ ReportRenderer.AuditJSON; // eslint-disable-line no-unused-expressions
 /**
  * @typedef {{
  *     name: string,
+ *     id: string,
  *     weight: number,
  *     score: number,
  *     description: string,
