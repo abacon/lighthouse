@@ -32,6 +32,8 @@ class ReportUIFeatures {
     this._copyAttempt = false;
     /** @type {Element} **/
     this.exportButton = null;
+    /** @type {Logger} **/
+    this.logger = null;
 
     this.onCopy = this.onCopy.bind(this);
     this.onExportButtonClick = this.onExportButtonClick.bind(this);
@@ -79,7 +81,8 @@ class ReportUIFeatures {
    * @param {!Element} container Parent element to render the report into.
    */
   _setupLogger(container) {
-    const loggerEl = this._dom.createElement('div', null, {id: 'lh-log'});
+    const loggerEl = this._dom.createElement('div');
+    loggerEl.id = 'lh-log';
     container.appendChild(loggerEl);
     this.logger = new Logger(loggerEl);
   }
@@ -317,7 +320,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = ReportUIFeatures;
 } else {
   self.ReportUIFeatures = ReportUIFeatures;
-}
 
-/** @type {function({url: string, generatedTime: string}): string} */
-self.getFilenamePrefix; // eslint-disable-line no-unused-expressions
+  /** @type {function({url: string, generatedTime: string}): string} */
+  self.getFilenamePrefix; // eslint-disable-line no-unused-expressions
+}
