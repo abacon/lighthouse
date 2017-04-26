@@ -188,27 +188,27 @@ class CategoryRenderer {
    * @return {!Element}
    */
   _renderAuditGroup(audits, tag) {
-      const auditGroupElem = this._dom.createElement('details',
+    const auditGroupElem = this._dom.createElement('details',
           'lh-audit-group lh-expandable-details');
-      const auditGroupHeader = this._dom.createElement('div',
+    const auditGroupHeader = this._dom.createElement('div',
           'lh-audit-group__header lh-expandable-details__header');
-      auditGroupHeader.textContent = tag.title;
+    auditGroupHeader.textContent = tag.title;
 
-      const auditGroupDescription = this._dom.createElement('div', 'lh-audit-group__description');
-      auditGroupDescription.textContent = tag.description;
+    const auditGroupDescription = this._dom.createElement('div', 'lh-audit-group__description');
+    auditGroupDescription.textContent = tag.description;
 
-      const auditGroupSummary = this._dom.createElement('summary',
+    const auditGroupSummary = this._dom.createElement('summary',
           'lh-audit-group__summary lh-expandable-details__summary');
-      const auditGroupArrow = this._dom.createElement('div', 'lh-expandable-details__arrow', {
-        title: 'See audits',
-      });
-      auditGroupSummary.appendChild(auditGroupHeader);
-      auditGroupSummary.appendChild(auditGroupArrow);
+    const auditGroupArrow = this._dom.createElement('div', 'lh-expandable-details__arrow', {
+      title: 'See audits',
+    });
+    auditGroupSummary.appendChild(auditGroupHeader);
+    auditGroupSummary.appendChild(auditGroupArrow);
 
-      auditGroupElem.appendChild(auditGroupSummary);
-      auditGroupElem.appendChild(auditGroupDescription);
-      audits.forEach(audit => auditGroupElem.appendChild(this._renderAudit(audit)));
-      return auditGroupElem;
+    auditGroupElem.appendChild(auditGroupSummary);
+    auditGroupElem.appendChild(auditGroupDescription);
+    audits.forEach(audit => auditGroupElem.appendChild(this._renderAudit(audit)));
+    return auditGroupElem;
   }
 
   /**
