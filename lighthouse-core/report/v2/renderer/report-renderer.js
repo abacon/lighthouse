@@ -56,9 +56,10 @@ class ReportRenderer {
       // Hook in JS features and page-level event listeners after the report
       // is in the document.
       if (this._uiFeatures) {
-        this._uiFeatures.addUIFeatures(report);
+        this._uiFeatures.initFeatures(report, container);
       }
     } catch (/** @type {!Error} */ e) {
+      container.textContent = '';
       element = container.appendChild(this._renderException(e));
     }
 

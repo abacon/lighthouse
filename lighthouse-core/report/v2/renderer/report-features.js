@@ -38,38 +38,39 @@ class ReportUIFeatures {
     this.onExport = this.onExport.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
     this.printShortCutDetect = this.printShortCutDetect.bind(this);
-
-    // Add logger to page.
-    let loggerEl = this._document.querySelector('#lh-log');
-    if (!loggerEl) {
-      loggerEl = this._dom.createElement('div');
-      loggerEl.id = 'lh-log';
-      this._document.body.appendChild(loggerEl);
-    }
-    this.logger = new Logger(loggerEl);
-  }
-
-  _addEventListeners() {
-    this._setUpCollapseDetailsAfterPrinting();
-
-    this.exportButton = this._dom.find('.lh-export__button', this._document);
-    if (this.exportButton) {
-      this.exportButton.addEventListener('click', this.onExportButtonClick);
-      const dropdown = this._dom.find('.lh-export__dropdown', this._document);
-      dropdown.addEventListener('click', this.onExport);
-
-      this._document.addEventListener('copy', this.onCopy);
-    }
-    this._document.addEventListener('keydown', this.printShortCutDetect);
   }
 
   /**
-   * Adds export button and print functionality to the report.
+   * Adds export button, print, and other functionality to the report. The method
+   * should be called whenever the report needs to be re-rendered.
    * @param {!ReportRenderer.ReportJSON} report
+   * @param {!Element} container Parent element to render the report into.
    */
-  addUIFeatures(report) {
+  initFeatures(report, container) {
     this.json = report;
-    this._addEventListeners();
+    this._setupLogger(container);
+    this._setupExportButton();
+    this._setUpCollapseDetailsAfterPrinting();
+    this._resetUIState();
+    this._document.addEventListener('keydown', this.printShortCutDetect);
+    this._document.addEventListener('copy', this.onCopy);
+  }
+
+  _setupExportButton() {
+    this.exportButton = this._dom.find('.lh-export__button', this._document);
+    this.exportButton.addEventListener('click', this.onExportButtonClick);
+
+    const dropdown = this._dom.find('.lh-export__dropdown', this._document);
+    dropdown.addEventListener('click', this.onExport);
+  }
+
+  /**
+   * @param {!Element} container Parent element to render the report into.
+   */
+  _setupLogger(container) {
+    const loggerEl = this._dom.createElement('div', null, {id: 'lh-log'});
+    container.appendChild(loggerEl);
+    this.logger = new Logger(loggerEl);
   }
 
   /**
@@ -131,9 +132,10 @@ class ReportUIFeatures {
   /**
    * Resets the state of page before capturing the page for export.
    * When the user opens the exported HTML page, certain UI elements should
-   * be in their open state (not opened) and the templates should be refreshly stamped.
+   * be in their open state (not opened) and the templates should be refreshly
+   * stamped.
    */
-  _resetUIForExport() {
+  _resetUIState() {
     this.logger.hide();
     this.closeExportDropdown();
     this._dom.findAll('template[data-stamped]', this._document).forEach(t => {
@@ -171,7 +173,7 @@ class ReportUIFeatures {
         break;
       }
       case 'save-html': {
-        this._resetUIForExport();
+        this._resetUIState();
 
         const htmlStr = this._document.documentElement.outerHTML;
         try {
