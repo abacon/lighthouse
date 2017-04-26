@@ -15,7 +15,7 @@
  */
 'use strict';
 
-/* globals self URL Blob Logger */
+/* globals self URL Blob Logger CustomEvent */
 
 class ReportUIFeatures {
 
@@ -56,6 +56,17 @@ class ReportUIFeatures {
     this._document.addEventListener('copy', this.onCopy);
   }
 
+  /**
+   * Fires a custom DOM event on target.
+   * @param {string} name Name of the event.
+   * @param {!Document|!Element} target DOM node to fire the event on.
+   * @param {Object<{detail: Object<string, *>}>=} detail Custom data to include.
+   */
+  _fireEventOn(name, target = this._document, detail) {
+    const event = new CustomEvent(name, detail ? {detail} : null);
+    this._document.dispatchEvent(event);
+  }
+
   _setupExportButton() {
     this.exportButton = this._dom.find('.lh-export__button', this._document);
     this.exportButton.addEventListener('click', this.onExportButtonClick);
@@ -93,9 +104,10 @@ class ReportUIFeatures {
    * Copies the report JSON to the clipboard (if supported by the browser).
    */
   onCopyButtonClick() {
-    if (self.ga) {
-      self.ga('send', 'event', 'report', 'copy');
-    }
+    this._fireEventOn('lh-analytics', this._document, {
+      cmd: 'send',
+      fields: {hitType: 'event', eventCategory: 'report', eventAction: 'copy'}
+    });
 
     try {
       if (this._document.queryCommandSupported('copy')) {

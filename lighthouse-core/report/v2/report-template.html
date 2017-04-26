@@ -43,6 +43,12 @@ limitations under the License.
       const container = document.querySelector('main');
       renderer.renderReport(window.__LIGHTHOUSE_JSON__, container);
     });
+
+    document.addEventListener('lh-analytics', e => {
+      if (self.ga) {
+        self.ga(e.detail.cmd, e.detail.fields);
+      }
+    });
   </script>
 </body>
 </html>
