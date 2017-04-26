@@ -117,11 +117,20 @@ ReportRenderer.CategoryJSON; // eslint-disable-line no-unused-expressions
 
 /**
  * @typedef {{
+ *     title: string,
+ *     description: string,
+ * }}
+ */
+ReportRenderer.TagJSON; // eslint-disable-line no-unused-expressions
+
+/**
+ * @typedef {{
  *     lighthouseVersion: string,
  *     generatedTime: string,
  *     initialUrl: string,
  *     url: string,
- *     reportCategories: !Array<!ReportRenderer.CategoryJSON>
+ *     reportCategories: !Array<!ReportRenderer.CategoryJSON>,
+ *     reportTags: !Object<string, !ReportRenderer.TagJSON>
  * }}
  */
 ReportRenderer.ReportJSON; // eslint-disable-line no-unused-expressions

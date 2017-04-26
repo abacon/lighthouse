@@ -570,7 +570,7 @@ class Config {
     return this._categories;
   }
 
-  /** @type {Object<{title: string, description: string}>} */
+  /** @type {Object<string, {title: string, description: string}>} */
   get tags() {
     return this._tags;
   }

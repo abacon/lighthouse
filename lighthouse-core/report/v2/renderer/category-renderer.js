@@ -140,6 +140,7 @@ class CategoryRenderer {
 
   /**
    * @param {!ReportRenderer.CategoryJSON} category
+   * @param {!Object<string, !ReportRenderer.TagJSON>} tags
    * @return {!Element}
    */
   render(category, tags) {
@@ -151,6 +152,10 @@ class CategoryRenderer {
     }
   }
 
+  /**
+   * @param {!ReportRenderer.CategoryJSON} category
+   * @return {!Element}
+   */
   _renderDefaultCategory(category) {
     const element = this._dom.createElement('div', 'lh-category');
     element.appendChild(this._renderCategoryScore(category));
@@ -177,6 +182,11 @@ class CategoryRenderer {
     return element;
   }
 
+  /**
+   * @param {!Array<!ReportRenderer.AuditJSON>} audits
+   * @param {!ReportRenderer.TagJSON} tag
+   * @return {!Element}
+   */
   _renderAuditGroup(audits, tag) {
       const auditGroupElem = this._dom.createElement('details', 'lh-audit-group');
       const auditGroupHeader = this._dom.createElement('div', 'lh-audit-group__header');
@@ -194,6 +204,11 @@ class CategoryRenderer {
       return auditGroupElem;
   }
 
+  /**
+   * @param {!ReportRenderer.CategoryJSON} category
+   * @param {!Object<string, !ReportRenderer.TagJSON>} tags
+   * @return {!Element}
+   */
   _renderAccessibilityCategory(category, tags) {
     const element = this._dom.createElement('div', 'lh-category');
     element.appendChild(this._renderCategoryScore(category));
