@@ -21,9 +21,9 @@ const TracingProcessor = require('../../lib/traces/tracing-processor');
 
 const LONG_TASK_THRESHOLD = 50;
 
-const MAX_TASK_GROUP_DURATION = 250;
-const MIN_TASK_GROUP_PADDING = 1000;
-const MIN_TASK_GROUP_FMP_DISTANCE = 5000;
+const MAX_TASK_CLUSTER_DURATION = 250;
+const MIN_TASK_CLUSTER_PADDING = 1000;
+const MIN_TASK_CLUSTER_FMP_DISTANCE = 5000;
 
 const MAX_QUIET_WINDOW_SIZE = 5000;
 const TRACE_BUSY_MSG = 'trace was busy the entire time';
@@ -41,18 +41,18 @@ const TRACE_BUSY_MSG = 'trace was busy the entire time';
  *      response is not always immediate.
  *
  * First Interactive is defined as the first period after FMP of N-seconds that has no bad task
- * groups.
+ * clusters.
  *
  *    > t = time in seconds since FMP
  *    > N = f(t) = 4 * e^(-0.045 * t) + 1
  *      5 = f(0) = 4 + 1
  *      3 ~= f(15) ~= 2 + 1
  *      1 ~= f(∞) ~= 0 + 1
- *    > a "bad task group" is a cluster of 1 or more long tasks with no more than 1s of idle time
+ *    > a "bad task cluster" is a cluster of 1 or more long tasks with no more than 1s of idle time
  *      between each task that does one of the following
  *        > Starts within the first 5s after FMP.
- *        > Spans more than 250ms from the start of the earliest task in the group to the end of the
- *          latest task in the group.
+ *        > Spans more than 250ms from the start of the earliest task in the cluster to the end of the
+ *          latest task in the cluster.
  *
  * If this timestamp is earlier than DOMContentLoaded, use DOMContentLoaded as firstInteractive.
  */
@@ -77,45 +77,45 @@ class FirstInteractive extends ComputedArtifact {
    * @param {number} windowEnd
    * @return {!Array<{start: number, end: number, duration: number}>}
    */
-  static getTaskGroupsInWindow(tasks, startIndex, windowEnd) {
-    const groups = [];
+  static getTaskClustersInWindow(tasks, startIndex, windowEnd) {
+    const clusters = [];
 
-    let lastEndTime = -Infinity;
-    let currentGroup = null;
+    let previousTaskEndTime = -Infinity;
+    let currentCluster = null;
 
-    // consider all tasks that could possibly be part of a group starting before windowEnd
-    const considerationWindowEnd = windowEnd + MIN_TASK_GROUP_PADDING;
-    const couldTaskBeInGroup = task => task && task.start < considerationWindowEnd;
-    for (let i = startIndex; couldTaskBeInGroup(tasks[i]); i++) {
+    // consider all tasks that could possibly be part of a cluster starting before windowEnd
+    const considerationWindowEnd = windowEnd + MIN_TASK_CLUSTER_PADDING;
+    const couldTaskBelongToCluster = task => task && task.start < considerationWindowEnd;
+    for (let i = startIndex; couldTaskBelongToCluster(tasks[i]); i++) {
       const task = tasks[i];
 
-      // check if enough time has passed to start a new group
-      if (task.start - lastEndTime > MIN_TASK_GROUP_PADDING) {
-        if (currentGroup) {
-          groups.push(currentGroup);
+      // if enough time has elapsed, we'll create a new cluster
+      if (task.start - previousTaskEndTime > MIN_TASK_CLUSTER_PADDING) {
+        if (currentCluster) {
+          clusters.push(currentCluster);
         }
 
-        currentGroup = [];
+        currentCluster = [];
       }
 
-      currentGroup.push(task);
-      lastEndTime = task.end;
+      currentCluster.push(task);
+      previousTaskEndTime = task.end;
     }
 
-    if (currentGroup) {
-      groups.push(currentGroup);
+    if (currentCluster) {
+      clusters.push(currentCluster);
     }
 
-    return groups
-      // add some useful information about the group
+    return clusters
+      // add some useful information about the cluster
       .map(tasks => {
         const start = tasks[0].start;
         const end = tasks[tasks.length - 1].end;
         const duration = end - start;
         return {start, end, duration, tasks};
       })
-      // filter out groups that started after the window
-      .filter(group => group.start < windowEnd);
+      // filter out clusters that started after the window
+      .filter(cluster => cluster.start < windowEnd);
   }
 
   /**
@@ -143,14 +143,14 @@ class FirstInteractive extends ComputedArtifact {
         throw new Error(TRACE_BUSY_MSG);
       }
 
-      const isTooCloseToFMP = group => group.start < FMP + MIN_TASK_GROUP_FMP_DISTANCE;
-      const isTooLong = group => group.duration > MAX_TASK_GROUP_DURATION;
-      const isBadTaskGroup = group => isTooCloseToFMP(group) || isTooLong(group);
+      const isTooCloseToFMP = cluster => cluster.start < FMP + MIN_TASK_CLUSTER_FMP_DISTANCE;
+      const isTooLong = cluster => cluster.duration > MAX_TASK_CLUSTER_DURATION;
+      const isBadCluster = cluster => isTooCloseToFMP(cluster) || isTooLong(cluster);
 
-      const taskGroups = FirstInteractive.getTaskGroupsInWindow(longTasks, i + 1, windowEnd);
-      const hasBadTaskGroups = taskGroups.find(isBadTaskGroup);
+      const taskClusters = FirstInteractive.getTaskClustersInWindow(longTasks, i + 1, windowEnd);
+      const hasBadTaskClusters = taskClusters.find(isBadCluster);
 
-      if (!hasBadTaskGroups) {
+      if (!hasBadTaskClusters) {
         return windowStart;
       }
     }
