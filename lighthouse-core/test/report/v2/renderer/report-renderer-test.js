@@ -49,6 +49,8 @@ describe('ReportRenderer V2', () => {
     };
 
     const document = jsdom.jsdom(TEMPLATE_FILE);
+    global.self = document.defaultView;
+
     const dom = new DOM(document);
     const detailsRenderer = new DetailsRenderer(dom);
     const categoryRenderer = new CategoryRenderer(dom, detailsRenderer);
@@ -56,6 +58,7 @@ describe('ReportRenderer V2', () => {
   });
 
   after(() => {
+    global.self = undefined;
     global.URL = undefined;
     global.Logger = undefined;
     global.ReportUIFeatures = undefined;
@@ -63,7 +66,7 @@ describe('ReportRenderer V2', () => {
     Object.keys(helpers).forEach(key => global[key] = undefined);
   });
 
-  describe.only('renderReport', () => {
+  describe('renderReport', () => {
     it('should render a report', () => {
       const container = renderer._dom._document.body;
       const output = renderer.renderReport(sampleResults, container);

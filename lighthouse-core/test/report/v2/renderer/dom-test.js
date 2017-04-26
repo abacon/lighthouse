@@ -63,7 +63,7 @@ describe('DOM', () => {
     });
 
     it('should clone a template from a context scope', () => {
-      const heading = dom.cloneTemplate('#tmpl-lh-heading');
+      const heading = dom.cloneTemplate('#tmpl-lh-heading', dom.document());
       const items = dom.cloneTemplate('#tmpl-lh-env__items', heading);
       assert.ok(items.querySelector('.lh-env__item'));
     });
