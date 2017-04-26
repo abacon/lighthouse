@@ -83,9 +83,12 @@ class FirstInteractive extends ComputedArtifact {
     let previousTaskEndTime = -Infinity;
     let currentCluster = null;
 
-    // consider all tasks that could possibly be part of a cluster starting before windowEnd
-    const considerationWindowEnd = windowEnd + MIN_TASK_CLUSTER_PADDING;
-    const couldTaskBelongToCluster = task => task && task.start < considerationWindowEnd;
+    // Examine all tasks that could possibly be part of a cluster starting before windowEnd.
+    // Consider the case where window end is 15s, there's a 100ms task from 14.9-15s and a 500ms
+    // task from 15.5-16s, we need that later task to be clustered with the first so we can properly
+    // identify that main thread isn't quiet.
+    const clusteringWindowEnd = windowEnd + MIN_TASK_CLUSTER_PADDING;
+    const couldTaskBelongToCluster = task => task && task.start < clusteringWindowEnd;
     for (let i = startIndex; couldTaskBelongToCluster(tasks[i]); i++) {
       const task = tasks[i];
 
@@ -114,7 +117,7 @@ class FirstInteractive extends ComputedArtifact {
         const duration = end - start;
         return {start, end, duration, tasks};
       })
-      // filter out clusters that started after the window
+      // filter out clusters that started after the window because of our clusteringWindowEnd
       .filter(cluster => cluster.start < windowEnd);
   }
 
