@@ -188,15 +188,22 @@ class CategoryRenderer {
    * @return {!Element}
    */
   _renderAuditGroup(audits, tag) {
-      const auditGroupElem = this._dom.createElement('details', 'lh-audit-group');
-      const auditGroupHeader = this._dom.createElement('div', 'lh-audit-group__header');
+      const auditGroupElem = this._dom.createElement('details',
+          'lh-audit-group lh-expandable-details');
+      const auditGroupHeader = this._dom.createElement('div',
+          'lh-audit-group__header lh-expandable-details__header');
       auditGroupHeader.textContent = tag.title;
 
       const auditGroupDescription = this._dom.createElement('div', 'lh-audit-group__description');
       auditGroupDescription.textContent = tag.description;
 
-      const auditGroupSummary = this._dom.createElement('summary', 'lh-audit-group__summary');
+      const auditGroupSummary = this._dom.createElement('summary',
+          'lh-audit-group__summary lh-expandable-details__summary');
+      const auditGroupArrow = this._dom.createElement('div', 'lh-expandable-details__arrow', {
+        title: 'See audits',
+      });
       auditGroupSummary.appendChild(auditGroupHeader);
+      auditGroupSummary.appendChild(auditGroupArrow);
 
       auditGroupElem.appendChild(auditGroupSummary);
       auditGroupElem.appendChild(auditGroupDescription);
